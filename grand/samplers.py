@@ -423,7 +423,8 @@ class BaseGrandCanonicalMonteCarloSampler(object):
         
         return None
 
-    def report(self, simulation):
+    #def report(self, simulation):
+    def report(self,simulation, state):
         """
         Function to report any useful data
 
@@ -433,7 +434,7 @@ class BaseGrandCanonicalMonteCarloSampler(object):
             Simulation object being used
         """
         # Get state
-        state = simulation.context.getState(getPositions=True, getVelocities=True)
+        #state = simulation.context.getState(getPositions=True, getVelocities=True)
 
         # Calculate rounded acceptance rate and mean N
         if self.n_moves > 0:
@@ -496,7 +497,7 @@ class BaseGrandCanonicalMonteCarloSampler(object):
 
         return None
 
-    def move(self, context, n=1):
+    def move(self, simulation, report=True,n=1):
         """
         Returns an error if someone attempts to execute a move with the parent object
         Parameters are designed to match the signature of the inheriting classes
@@ -660,6 +661,7 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
                             continue
                     # Loop over all atoms in this residue to find the one with the right name
                     for atom in residue.atoms():
+                        #print(atom.name)
                         if atom.name == name:
                             atom_indices.append(atom.index)
                             found = True
@@ -754,6 +756,7 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
             for atom in residue.atoms():
                 ox_index = atom.index
                 break
+            #print(self.positions[ox_index])
 
             vector = self.positions[ox_index] - self.sphere_centre
             # Correct PBCs of this vector - need to make this part cleaner
@@ -843,10 +846,13 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
                                         box_vectors[2, 2]._value]) * unit.nanometer
 
         # Check which waters are in the GCMC region
-        for resid, residue in enumerate(self.topology.residues()):
-            # Make sure this is a water
-            if resid not in self.water_resids:
-                continue
+        #for resid, residue in enumerate(self.topology.residues()):
+        #    # Make sure this is a water
+        #    if resid not in self.water_resids:
+        #        continue
+        all_res = list(self.topology.residues())
+        for resid in self.water_resids:
+            residue = all_res[resid]
 
             # Get oxygen atom ID
             for atom in residue.atoms():
@@ -898,11 +904,14 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
 
         insert_water = np.random.choice(ghost_wats)
         atom_indices = []
-        for resid, residue in enumerate(self.topology.residues()):
-            if resid == insert_water:
-                for atom in residue.atoms():
-                    atom_indices.append(atom.index)
 
+        #for resid, residue in enumerate(self.topology.residues()):
+        #    if resid == insert_water:
+        #        for atom in residue.atoms():
+        #            atom_indices.append(atom.index)
+        all_res = list(self.topology.residues())
+        for atom in all_res[insert_water].atoms():
+            atom_indices.append(atom.index)
         # Select a point to insert the water (based on O position)
         rand_nums = np.random.randn(3)
         insert_point = self.sphere_centre + (
@@ -945,14 +954,18 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
 
         # Get atom indices
         atom_indices = []
-        for resid, residue in enumerate(self.topology.residues()):
-            if resid == delete_water:
-                for atom in residue.atoms():
-                    atom_indices.append(atom.index)
+        #for resid, residue in enumerate(self.topology.residues()):
+        #    if resid == delete_water:
+        #        for atom in residue.atoms():
+        #            atom_indices.append(atom.index)
+        all_res = list(self.topology.residues())
+        for atom in all_res[delete_water].atoms():
+            atom_indices.append(atom.index)
 
         return delete_water, atom_indices
 
-    def report(self, simulation):
+    #def report(self,simulation):
+    def report(self,simulation, state):
         """
         Function to report any useful data
 
@@ -962,10 +975,10 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
             Simulation object being used
         """
         # Get state
-        state = simulation.context.getState(getPositions=True, getVelocities=True)
+        #state = simulation.context.getState(getPositions=True, getVelocities=True)
 
         # Update GCMC sphere
-        self.updateGCMCSphere(state)
+        #self.updateGCMCSphere(state)
 
         # Calculate rounded acceptance rate and mean N
         if self.n_moves > 0:
@@ -1058,7 +1071,8 @@ class StandardGCMCSphereSampler(GCMCSphereSampler):
         self.energy = None  # Need to save energy
         self.logger.info("StandardGCMCSphereSampler object initialised")
 
-    def move(self, context, n=1):
+    def move(self, simulation, report=True, n=1):
+    #def move(self, context, n=1):
         """
         Execute a number of GCMC moves on the current system
 
@@ -1070,8 +1084,8 @@ class StandardGCMCSphereSampler(GCMCSphereSampler):
             Number of moves to execute
         """
         # Read in positions
-        self.context = context
-        state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getEnergy=True)
+        self.context = simulation.context
+        state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getEnergy=True,getVelocities=True)
         self.positions = deepcopy(state.getPositions(asNumpy=True))
         self.energy = state.getPotentialEnergy()
 
@@ -1095,7 +1109,8 @@ class StandardGCMCSphereSampler(GCMCSphereSampler):
                 self.deletionMove()
             self.n_moves += 1
             self.Ns.append(self.N)
-
+        if report:
+            self.report(simulation, state)
         return None
 
     def insertionMove(self):
@@ -1273,7 +1288,7 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
 
         self.logger.info("NonequilibriumGCMCSphereSampler object initialised")
 
-    def move(self, context, n=1):
+    def move(self,simulation, report=True,n=1):
         """
         Carry out a nonequilibrium GCMC move
 
@@ -1285,7 +1300,7 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
             Number of moves to execute
         """
         # Read in positions
-        self.context = context
+        self.context = simulation.context
         state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getVelocities=True)
         self.positions = deepcopy(state.getPositions(asNumpy=True))
         self.velocities = deepcopy(state.getVelocities(asNumpy=True))
@@ -1310,7 +1325,8 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
 
         # Set to MD integrator
         self.compound_integrator.setCurrentIntegrator(0)
-
+        if report:
+            self.report(simulation, state)
         return None
 
     def insertionMove(self):
@@ -1634,11 +1650,13 @@ class GCMCSystemSampler(BaseGrandCanonicalMonteCarloSampler):
 
         insert_water = np.random.choice(ghost_wats)
         atom_indices = []
-        for resid, residue in enumerate(self.topology.residues()):
-            if resid == insert_water:
-                for atom in residue.atoms():
-                    atom_indices.append(atom.index)
-
+        #for resid, residue in enumerate(self.topology.residues()):
+        #    if resid == insert_water:
+        #        for atom in residue.atoms():
+        #            atom_indices.append(atom.index)
+        all_res = list(self.topology.residues())
+        for atom in all_res[insert_water].atoms():
+            atom_indices.append(atom.index)
         # Select a point to insert the water (based on O position)
         insert_point = np.random.rand(3) * self.simulation_box
         #  Generate a random rotation matrix
@@ -1677,10 +1695,13 @@ class GCMCSystemSampler(BaseGrandCanonicalMonteCarloSampler):
         # Select a water residue to delete
         delete_water = np.random.choice(gcmc_wats)
         atom_indices = []
-        for resid, residue in enumerate(self.topology.residues()):
-            if resid == delete_water:
-                for atom in residue.atoms():
-                    atom_indices.append(atom.index)
+        #for resid, residue in enumerate(self.topology.residues()):
+        #    if resid == delete_water:
+        #        for atom in residue.atoms():
+        #            atom_indices.append(atom.index)
+        all_res = list(self.topology.residues())
+        for atom in all_res[delete_water].atoms():
+            atom_indices.append(atom.index)
 
         return delete_water, atom_indices
 
@@ -1741,7 +1762,7 @@ class StandardGCMCSystemSampler(GCMCSystemSampler):
         self.energy = None  # Need to save energy
         self.logger.info("StandardGCMCSystemSampler object initialised")
 
-    def move(self, context, n=1):
+    def move(self, simulation, report=True, n=1):
         """
         Execute a number of GCMC moves on the current system
 
@@ -1753,7 +1774,7 @@ class StandardGCMCSystemSampler(GCMCSystemSampler):
             Number of moves to execute
         """
         # Read in positions
-        self.context = context
+        self.context = simulation.context
         state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getEnergy=True)
         self.positions = deepcopy(state.getPositions(asNumpy=True))
         self.energy = state.getPotentialEnergy()
@@ -1769,7 +1790,8 @@ class StandardGCMCSystemSampler(GCMCSystemSampler):
                 self.deletionMove()
             self.n_moves += 1
             self.Ns.append(self.N)
-
+        if report:
+            self.report(simulation, state)
         return None
 
     def insertionMove(self):
@@ -1938,7 +1960,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
 
         self.logger.info("NonequilibriumGCMCSystemSampler object initialised")
 
-    def move(self, context, n=1):
+    def move(self, simulation,report=True,n=1):
         """
         Carry out a nonequilibrium GCMC move
 
@@ -1950,7 +1972,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
             Number of moves to execute
         """
         # Read in positions
-        self.context = context
+        self.context = simulation.context
         state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getVelocities=True)
         self.positions = deepcopy(state.getPositions(asNumpy=True))
         self.velocities = deepcopy(state.getVelocities(asNumpy=True))
@@ -1972,7 +1994,8 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
 
         # Set to MD integrator
         self.compound_integrator.setCurrentIntegrator(0)
-
+        if report:
+            self.report(simulation, state)
         return None
 
     def insertionMove(self):
