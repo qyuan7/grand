@@ -118,6 +118,10 @@ def add_ghosts(topology, positions, ff='tip3p', n=10, pdb='gcmc-extra-wats.pdb')
     """
     # Create a Modeller instance of the system
     modeller = app.Modeller(topology=topology, positions=positions)
+    # Align coordinate of simulation box
+    xmin = min([v[0] for v in modeller.positions._value])/10.0
+    ymin = min([v[1] for v in modeller.positions._value])/10.0
+    zmin = min([v[2] for v in modeller.positions._value])/10.0
 
     # Read the chain IDs
     chain_ids = []
@@ -136,12 +140,13 @@ def add_ghosts(topology, positions, ff='tip3p', n=10, pdb='gcmc-extra-wats.pdb')
 
     # Add multiple copies of the same water, then write out a pdb (for visualisation)
     ghosts = []
+    translation = np.array([xmin, ymin, zmin]) * unit.nanometer
     for i in range(n):
         # Read in template water positions
         positions = water.positions
 
         # Need to translate the water to a random point in the simulation box
-        new_centre = np.random.rand(3) * box_size
+        new_centre = (np.random.rand(3)) * box_size + translation
         new_positions = deepcopy(water.positions)
         for i in range(len(positions)):
             new_positions[i] = positions[i] + new_centre - positions[0]
