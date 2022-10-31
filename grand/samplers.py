@@ -1431,7 +1431,7 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
             self.setWaterStatus(resid, 0)
             self.updateGCMCSphere(state)
             self.logger.info("Insertion rejected")
-            print("Insertion rejected")
+            #print("Insertion rejected")
         else:
             # Update some variables if move is accepted
             self.N = len(wats_in_sphere)
@@ -1441,7 +1441,7 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
             self.velocities = deepcopy(state.getVelocities(asNumpy=True))
             self.updateGCMCSphere(state)
             self.logger.info("Insertion accepted")
-            print("Insertion accepted")
+            #print("Insertion accepted")
 
         return None
 
@@ -1518,7 +1518,7 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
             state = self.context.getState(getPositions=True, enforcePeriodicBox=True)
             self.updateGCMCSphere(state)
             self.logger.info("Deletion rejected")
-            print("Deletion rejected")
+            #print("Deletion rejected")
         else:
             # Update some variables if move is accepted
             self.setWaterStatus(resid, 0)
@@ -1529,7 +1529,7 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
             self.velocities = deepcopy(state.getVelocities(asNumpy=True))
             self.updateGCMCSphere(state)
             self.logger.info("Deletion accepted")
-            print("Deletion accepted")
+            #print("Deletion accepted")
 
         return None
 
@@ -2022,11 +2022,11 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
             # Insert or delete a water, based on random choice
             if np.random.randint(2) == 1:
                 # Attempt to insert a water
-                print("Insert attempt")
+                #("Insert attempt")
                 self.insertionMove()
             else:
                 # Attempt to delete a water
-                print("Delete attempt")
+                #print("Delete attempt")
                 self.deletionMove()
             self.n_moves += 1
             self.Ns.append(self.N)
@@ -2041,7 +2041,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
         """
         Carry out a nonequilibrium insertion move for a random water molecule
         """
-        print("Trying insertion")
+        #print("Trying insertion")
         # Insert a ghost water to a random site
         new_positions, resid, atom_indices = self.insertRandomWater()
 
@@ -2090,7 +2090,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
             self.positions = deepcopy(self.positions)
             self.velocities = -self.velocities
             self.logger.info("Insertion rejected")
-            print("Insertion rejected")
+            #print("Insertion rejected")
         else:
             # Update some variables if move is accepted
             self.N += 1
@@ -2100,7 +2100,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
             self.velocities = deepcopy(state.getVelocities(asNumpy=True))
             self.setWaterStatus(resid, 1)
             self.logger.info("Insertion accepted")
-            print("Insertion accepted")
+            #print("Insertion accepted")
 
         return None
 
@@ -2109,7 +2109,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
         Carry out a nonequilibrium deletion move for a random water molecule
         """
         # Choose a random water to be deleted
-        print("trying deletion")
+        #print("trying deletion")
         resid, atom_indices = self.deleteRandomWater()
         # Deletion may not be possible
         if resid is None:
@@ -2157,7 +2157,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
             self.positions = deepcopy(self.positions)
             self.velocities = -self.velocities
             self.logger.info("Deletion rejected")
-            print("Deletion rejected")
+            #print("Deletion rejected")
         else:
             # Update some variables if move is accepted
             self.setWaterStatus(resid, 0)
@@ -2167,7 +2167,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
             self.positions = deepcopy(state.getPositions(asNumpy=True))
             self.velocities = deepcopy(state.getVelocities(asNumpy=True))
             self.logger.info("Deletion accepted")
-            print("Deletion accepted")
+            #print("Deletion accepted")
 
         return None
 
