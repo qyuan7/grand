@@ -15,8 +15,8 @@ import os
 import numpy as np
 import mdtraj
 import parmed
-from simtk import unit
-from simtk.openmm import app
+from openmm import unit
+from openmm import app
 from copy import deepcopy
 from scipy.cluster import hierarchy
 import warnings
@@ -34,7 +34,7 @@ class PDBRestartReporter(object):
         ----------
         filename : str
             Name of the PDB file to write out
-        topology : simtk.openmm.app.Topology
+        topology : openmm.app.Topology
             Topology object for the system of interest
         """
         self.filename = filename
@@ -46,9 +46,9 @@ class PDBRestartReporter(object):
 
         Parameters
         ----------
-        simulation : simtk.openmm.app.Simulation
+        simulation : openmm.app.Simulation
             Simulation object being used
-        state : simtk.openmm.State
+        state : openmm.State
             Current State of the simulation
         """
         # Read the positions from the state
@@ -94,9 +94,9 @@ def add_ghosts(topology, positions, ff='tip3p', n=10, pdb='gcmc-extra-wats.pdb')
 
     Parameters
     ----------
-    topology : simtk.openmm.app.Topology
+    topology : openmm.app.Topology
         Topology of the initial system
-    positions : simtk.unit.Quantity
+    positions : openmm.unit.Quantity
         Atomic coordinates of the initial system
     ff : str
         Water forcefield to use. Currently only TIP3P is supported. 
@@ -108,9 +108,9 @@ def add_ghosts(topology, positions, ff='tip3p', n=10, pdb='gcmc-extra-wats.pdb')
 
     Returns
     -------
-    modeller.topology : simtk.openmm.app.Topology
+    modeller.topology : openmm.app.Topology
         Topology of the system after modification
-    modeller.positions : simtk.unit.Quantity
+    modeller.positions : openmm.unit.Quantity
         Atomic positions of the system after modification
     ghosts : list
         List of the residue numbers (counting from 0) of the ghost
@@ -180,9 +180,9 @@ def remove_ghosts(topology, positions, ghosts=None, pdb='gcmc-removed-ghosts.pdb
 
     Parameters
     ----------
-    topology : simtk.openmm.app.Topology
+    topology : openmm.app.Topology
         Topology of the initial system
-    positions : simtk.unit.Quantity
+    positions : openmm.unit.Quantity
         Atomic coordinates of the initial system
     ghosts : list
         List of residue IDs for the ghost waters to be deleted
@@ -192,9 +192,9 @@ def remove_ghosts(topology, positions, ghosts=None, pdb='gcmc-removed-ghosts.pdb
 
     Returns
     -------
-    modeller.topology : simtk.openmm.app.Topology
+    modeller.topology : openmm.app.Topology
         Topology of the system after modification
-    modeller.positions : simtk.unit.Quantity
+    modeller.positions : openmm.unit.Quantity
         Atomic positions of the system after modification
     """
     # Do nothing if no ghost waters are specified
@@ -780,7 +780,7 @@ def write_sphere_traj(radius, ref_atoms=None, topology=None, trajectory=None, t=
         Trajectory file, such as DCD
     t : mdtraj.Trajectory
         Trajectory object, if already loaded
-    sphere_centre : simtk.unit.Quantity
+    sphere_centre : openmm.unit.Quantity
         Coordinates around which the GCMC sphere is based
     output : str
         Name of the output PDB file
@@ -885,7 +885,7 @@ def cluster_waters(topology, trajectory, sphere_radius, ref_atoms=None, sphere_c
         Radius of the GCMC sphere in Angstroms
     ref_atoms : list
         List of reference atoms for the GCMC sphere (list of dictionaries)
-    sphere_centre : simtk.unit.Quantity
+    sphere_centre : openmm.unit.Quantity
         Coordinates around which the GCMC sphere is based
     cutoff : float
         Distance cutoff used in the clustering

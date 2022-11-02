@@ -10,9 +10,9 @@ Marley Samways
 Ollie Melling
 """
 
-from simtk.openmm.app import *
-from simtk.openmm import *
-from simtk.unit import *
+from openmm.app import *
+from openmm import *
+from openmm.unit import *
 from sys import stdout
 
 from openmmtools.integrators import BAOABIntegrator
