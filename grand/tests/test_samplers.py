@@ -10,9 +10,9 @@ import os
 import unittest
 import numpy as np
 from copy import deepcopy
-from simtk.openmm.app import *
-from simtk.openmm import *
-from simtk.unit import *
+from openmm.app import *
+from openmm import *
+from openmm.unit import *
 from grand import samplers
 from grand import utils
 

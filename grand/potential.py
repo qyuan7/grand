@@ -11,9 +11,9 @@ Marley Samways
 import numpy as np
 import pymbar
 import openmmtools
-from simtk.openmm.app import *
-from simtk.openmm import *
-from simtk.unit import *
+from openmm.app import *
+from openmm import *
+from openmm.unit import *
 
 import grand
 
@@ -57,15 +57,15 @@ def calc_mu_ex(system, topology, positions, box_vectors, temperature, n_lambdas,
 
     Parameters
     ----------
-    system : simtk.openmm.System
+    system : openmm.System
         System of interest
-    topology : simtk.openmm.app.Topology
+    topology : openmm.app.Topology
         Topology of the system
-    positions : simtk.unit.Quantity
+    positions : openmm.unit.Quantity
         Initial positions for the simulation
-    box_vectors : simtk.unit.Quantity
+    box_vectors : openmm.unit.Quantity
         Periodic box vectors for the system
-    temperature : simtk.unit.Quantity
+    temperature : openmm.unit.Quantity
         Temperature of the simulation
     n_lambdas : int
         Number of lambda values
@@ -78,7 +78,7 @@ def calc_mu_ex(system, topology, positions, box_vectors, temperature, n_lambdas,
 
     Returns
     -------
-    dG : simtk.unit.Quantity
+    dG : openmm.unit.Quantity
         Calculated free energy value
     """
     # Use the BAOAB integrator to sample the equilibrium distribution
@@ -191,15 +191,15 @@ def calc_std_volume(system, topology, positions, box_vectors, temperature, n_sam
 
     Parameters
     ----------
-    system : simtk.openmm.System
+    system : openmm.System
         System of interest
-    topology : simtk.openmm.app.Topology
+    topology : openmm.app.Topology
         Topology of the system
-    positions : simtk.unit.Quantity
+    positions : openmm.unit.Quantity
         Initial positions for the simulation
-    box_vectors : simtk.unit.Quantity
+    box_vectors : openmm.unit.Quantity
         Periodic box vectors for the system
-    temperature : simtk.unit.Quantity
+    temperature : openmm.unit.Quantity
         Temperature of the simulation
     n_samples : int
         Number of volume samples to collect
@@ -208,7 +208,7 @@ def calc_std_volume(system, topology, positions, box_vectors, temperature, n_sam
 
     Returns
     -------
-    std_volume : simtk.unit.Quantity
+    std_volume : openmm.unit.Quantity
         Calculated free energy value
     """
     # Use the BAOAB integrator to sample the equilibrium distribution
