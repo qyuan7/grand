@@ -834,6 +834,7 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
             Current State
         """
         # Make sure the positions are definitely updated
+        # Make sure the positions are definitely updated
         self.positions = deepcopy(state.getPositions(asNumpy=True))
 
         # Get the sphere centre, if using reference atoms, otherwise this will be fine
@@ -846,38 +847,32 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
                                         box_vectors[2, 2]._value]) * unit.nanometer
 
         # Check which waters are in the GCMC region
-        #for resid, residue in enumerate(self.topology.residues()):
-        #    # Make sure this is a water
-        #    if resid not in self.water_resids:
-        #        continue
         all_res = list(self.topology.residues())
+        ox_idxs = []
+        ox_positions = []
         for resid in self.water_resids:
-            residue = all_res[resid]
-
-            # Get oxygen atom ID
-            for atom in residue.atoms():
-                ox_index = atom.index
+            for atom in all_res[resid].atoms():
+                ox_idx = atom.index
                 break
+            ox_idxs.append(ox_idx)
+            ox_positions.append(self.positions[ox_idx])
+        ox_positions_arr = np.array(ox_positions)*unit.nanometer
 
-            # Ghost waters automatically count as GCMC waters
+        for i in range(3):
+            ox_positions_arr[:, i] -= self.sphere_centre[i]
+            ox_positions_arr[: , i][ox_positions_arr[:,i] >= 0.5 * self.simulation_box[i]] -= self.simulation_box[i]
+            ox_positions_arr[: , i][ox_positions_arr[:,i] <= -0.5 * self.simulation_box[i]] += self.simulation_box[i]
+        distances = np.linalg.norm(ox_positions_arr, axis=1)*unit.nanometer
+
+        places = (distances<=self.sphere_radius)
+        for i, resid in enumerate(self.water_resids):
             if self.getWaterStatusValue(resid) == 0:
                 continue
-
-            # Check if the water is within the sphere
-            vector = self.positions[ox_index] - self.sphere_centre
-            #  Correct PBCs of this vector - need to make this part cleaner
-            for i in range(3):
-                if vector[i] >= 0.5 * self.simulation_box[i]:
-                    vector[i] -= self.simulation_box[i]
-                elif vector[i] <= -0.5 * self.simulation_box[i]:
-                    vector[i] += self.simulation_box[i]
-
-            # Set the status of this water as appropriate
-            if np.linalg.norm(vector) * unit.nanometer <= self.sphere_radius:
+            elif places[i] == True:
                 self.setWaterStatus(resid, 1)
             else:
                 self.setWaterStatus(resid, 2)
-
+        
         # Update lists
         self.N = len(self.getWaterStatusResids(1))
 
