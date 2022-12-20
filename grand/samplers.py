@@ -423,7 +423,6 @@ class BaseGrandCanonicalMonteCarloSampler(object):
         
         return None
 
-    #def report(self, simulation):
     def report(self,simulation, state):
         """
         Function to report any useful data
@@ -432,10 +431,11 @@ class BaseGrandCanonicalMonteCarloSampler(object):
         ----------
         simulation : openmm.app.Simulation
             Simulation object being used
+        state : openmm.State
+            State object from OpenMM for the current simulation - this parameter was added by Cresset as an
+            optimisation to ensure that a call to move followed immediately by a call to report does not have to get
+            the state twice. The state must contain both the positions and the velocities.
         """
-        # Get state
-        #state = simulation.context.getState(getPositions=True, getVelocities=True)
-
         # Calculate rounded acceptance rate and mean N
         if self.n_moves > 0:
             acc_rate = np.round(self.n_accepted * 100.0 / self.n_moves, 4)
@@ -497,17 +497,19 @@ class BaseGrandCanonicalMonteCarloSampler(object):
 
         return None
 
-    def move(self, simulation, report=True,n=1):
+    def move(self, simulation, n=1, report=False):
         """
         Returns an error if someone attempts to execute a move with the parent object
         Parameters are designed to match the signature of the inheriting classes
 
         Parameters
         ----------
-        context : openmm.Context
-            Current context of the simulation
+        simulation : openmm.app.Simulation
+            The current simulation
         n : int
             Number of moves to execute
+        report : If true, call the report function after the move - this parameter was added by Cresset as an
+            optimisation to ensure that a move followed by a report does not have to get the state twice.
         """
         error_msg = ("GrandCanonicalMonteCarloSampler is not designed to sample!")
         self.logger.error(error_msg)
@@ -661,7 +663,6 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
                             continue
                     # Loop over all atoms in this residue to find the one with the right name
                     for atom in residue.atoms():
-                        #print(atom.name)
                         if atom.name == name:
                             atom_indices.append(atom.index)
                             found = True
@@ -756,7 +757,6 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
             for atom in residue.atoms():
                 ox_index = atom.index
                 break
-            #print(self.positions[ox_index])
 
             vector = self.positions[ox_index] - self.sphere_centre
             # Correct PBCs of this vector - need to make this part cleaner
@@ -900,10 +900,6 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
         insert_water = np.random.choice(ghost_wats)
         atom_indices = []
 
-        #for resid, residue in enumerate(self.topology.residues()):
-        #    if resid == insert_water:
-        #        for atom in residue.atoms():
-        #            atom_indices.append(atom.index)
         all_res = list(self.topology.residues())
         for atom in all_res[insert_water].atoms():
             atom_indices.append(atom.index)
@@ -949,18 +945,13 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
 
         # Get atom indices
         atom_indices = []
-        #for resid, residue in enumerate(self.topology.residues()):
-        #    if resid == delete_water:
-        #        for atom in residue.atoms():
-        #            atom_indices.append(atom.index)
         all_res = list(self.topology.residues())
         for atom in all_res[delete_water].atoms():
             atom_indices.append(atom.index)
 
         return delete_water, atom_indices
 
-    #def report(self,simulation):
-    def report(self,simulation, state):
+    def report(self,simulation, state, updateSphere=True):
         """
         Function to report any useful data
 
@@ -968,12 +959,17 @@ class GCMCSphereSampler(BaseGrandCanonicalMonteCarloSampler):
         ----------
         simulation : openmm.app.Simulation
             Simulation object being used
+        state : openmm.openmm.State
+            State object from OpenMM for the current simulation - this parameter was added by Cresset as an
+            optimisation to ensure that a call to move followed immediately by a call to report does not have to get
+            the state twice. The state must contain both the positions and the velocities.
+        updateSphere : If true, update the GCMC sphere - this parameter was added by Cresset as an optimisation to
+            allow report to be called directly from move without the expense of updating the sphere again for
+            NonequilibriumGCMCSphereSampler. 
         """
-        # Get state
-        #state = simulation.context.getState(getPositions=True, getVelocities=True)
-
         # Update GCMC sphere
-        #self.updateGCMCSphere(state)
+        if updateSphere:
+            self.updateGCMCSphere(state)
 
         # Calculate rounded acceptance rate and mean N
         if self.n_moves > 0:
@@ -1066,21 +1062,22 @@ class StandardGCMCSphereSampler(GCMCSphereSampler):
         self.energy = None  # Need to save energy
         self.logger.info("StandardGCMCSphereSampler object initialised")
 
-    def move(self, simulation, report=True, n=1):
-    #def move(self, context, n=1):
+    def move(self, simulation, n=1, report=False):
         """
         Execute a number of GCMC moves on the current system
 
         Parameters
         ----------
-        context : openmm.Context
-            Current context of the simulation
+        simulation : openmm.app.Simulation
+            The current simulation
         n : int
             Number of moves to execute
+        report : If true, call the report function after the move - this parameter was added by Cresset as an
+            optimisation to ensure that a move followed by a report does not have to get the state twice.
         """
         # Read in positions
         self.context = simulation.context
-        state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getEnergy=True,getVelocities=True)
+        state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getEnergy=True, getVelocities=report)
         self.positions = deepcopy(state.getPositions(asNumpy=True))
         self.energy = state.getPotentialEnergy()
 
@@ -1283,16 +1280,19 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
 
         self.logger.info("NonequilibriumGCMCSphereSampler object initialised")
 
-    def move(self,simulation, report=True,n=1):
+    def move(self, simulation, n=1, report=False):
         """
         Carry out a nonequilibrium GCMC move
 
         Parameters
         ----------
-        context : openmm.Context
-            Current context of the simulation
+        simulation : openmm.app.Simulation
+            The current simulation
         n : int
             Number of moves to execute
+        report : If true, call the report function after the move - this parameter was added by Cresset as an
+            optimisation to ensure that a move followed by a report does not have to get the state twice or update the
+            GCMC sphere twice when using NonequilibriumGCMCSphereSampler.
         """
         # Read in positions
         self.context = simulation.context
@@ -1321,7 +1321,7 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
         # Set to MD integrator
         self.compound_integrator.setCurrentIntegrator(0)
         if report:
-            self.report(simulation, state)
+            self.report(simulation, state, updateSphere=False) # updateGCMCSphere has already been called in insertionMove and deletionMove
         return None
 
     def insertionMove(self):
@@ -1645,10 +1645,6 @@ class GCMCSystemSampler(BaseGrandCanonicalMonteCarloSampler):
 
         insert_water = np.random.choice(ghost_wats)
         atom_indices = []
-        #for resid, residue in enumerate(self.topology.residues()):
-        #    if resid == insert_water:
-        #        for atom in residue.atoms():
-        #            atom_indices.append(atom.index)
         all_res = list(self.topology.residues())
         for atom in all_res[insert_water].atoms():
             atom_indices.append(atom.index)
@@ -1690,10 +1686,6 @@ class GCMCSystemSampler(BaseGrandCanonicalMonteCarloSampler):
         # Select a water residue to delete
         delete_water = np.random.choice(gcmc_wats)
         atom_indices = []
-        #for resid, residue in enumerate(self.topology.residues()):
-        #    if resid == delete_water:
-        #        for atom in residue.atoms():
-        #            atom_indices.append(atom.index)
         all_res = list(self.topology.residues())
         for atom in all_res[delete_water].atoms():
             atom_indices.append(atom.index)
@@ -1757,20 +1749,22 @@ class StandardGCMCSystemSampler(GCMCSystemSampler):
         self.energy = None  # Need to save energy
         self.logger.info("StandardGCMCSystemSampler object initialised")
 
-    def move(self, simulation, report=True, n=1):
+    def move(self, simulation, n=1, report=False):
         """
         Execute a number of GCMC moves on the current system
 
         Parameters
         ----------
-        context : openmm.Context
-            Current context of the simulation
+        simulation : openmm.app.Simulation
+            The current simulation
         n : int
             Number of moves to execute
+        report : If true, call the report function after the move - this parameter was added by Cresset as an
+            optimisation to ensure that a move followed by a report does not have to get the state twice.
         """
         # Read in positions
         self.context = simulation.context
-        state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getEnergy=True)
+        state = self.context.getState(getPositions=True, enforcePeriodicBox=True, getEnergy=True, getVelocities=report)
         self.positions = deepcopy(state.getPositions(asNumpy=True))
         self.energy = state.getPotentialEnergy()
 
@@ -1955,16 +1949,18 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
 
         self.logger.info("NonequilibriumGCMCSystemSampler object initialised")
 
-    def move(self, simulation,report=True,n=1):
+    def move(self, simulation, n=1, report=False):
         """
         Carry out a nonequilibrium GCMC move
 
         Parameters
         ----------
-        context : openmm.Context
-            Current context of the simulation
+        simulation : openmm.app.Simulation
+            The current simulation
         n : int
             Number of moves to execute
+        report : If true, call the report function after the move - this parameter was added by Cresset as an
+            optimisation to ensure that a move followed by a report does not have to get the state twice.
         """
         # Read in positions
         self.context = simulation.context
