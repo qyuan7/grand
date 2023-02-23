@@ -1073,6 +1073,14 @@ class StandardGCMCSphereSampler(GCMCSphereSampler):
             Number of moves to execute
         report : If true, call the report function after the move - this parameter was added by Cresset as an
             optimisation to ensure that a move followed by a report does not have to get the state twice.
+
+        Returns
+        -------
+        state : openmm.State
+            State object from OpenMM for the current simulation - this return type was added by Cresset as an
+            optimisation so that dcd reporting external to grand can use the state without another expensive
+            call to getState. The dcd reporting from grand's report function uses mdtraj, which does not allow
+            other processes to read the file while it's open for writing on Windows.
         """
         # Read in positions
         self.context = simulation.context
@@ -1102,7 +1110,7 @@ class StandardGCMCSphereSampler(GCMCSphereSampler):
             self.Ns.append(self.N)
         if report:
             self.report(simulation, state)
-        return None
+        return state
 
     def insertionMove(self):
         """
@@ -1292,6 +1300,14 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
         report : If true, call the report function after the move - this parameter was added by Cresset as an
             optimisation to ensure that a move followed by a report does not have to get the state twice or update the
             GCMC sphere twice when using NonequilibriumGCMCSphereSampler.
+
+        Returns
+        -------
+        state : openmm.State
+            State object from OpenMM for the current simulation - this return type was added by Cresset as an
+            optimisation so that dcd reporting external to grand can use the state without another expensive
+            call to getState. The dcd reporting from grand's report function uses mdtraj, which does not allow
+            other processes to read the file while it's open for writing on Windows.
         """
         # Read in positions
         self.context = simulation.context
@@ -1321,7 +1337,7 @@ class NonequilibriumGCMCSphereSampler(GCMCSphereSampler):
         self.compound_integrator.setCurrentIntegrator(0)
         if report:
             self.report(simulation, state, updateSphere=False) # updateGCMCSphere has already been called in insertionMove and deletionMove
-        return None
+        return state
 
     def insertionMove(self):
         """
@@ -1756,6 +1772,14 @@ class StandardGCMCSystemSampler(GCMCSystemSampler):
             Number of moves to execute
         report : If true, call the report function after the move - this parameter was added by Cresset as an
             optimisation to ensure that a move followed by a report does not have to get the state twice.
+
+        Returns
+        -------
+        state : openmm.State
+            State object from OpenMM for the current simulation - this return type was added by Cresset as an
+            optimisation so that dcd reporting external to grand can use the state without another expensive
+            call to getState. The dcd reporting from grand's report function uses mdtraj, which does not allow
+            other processes to read the file while it's open for writing on Windows.
         """
         # Read in positions
         self.context = simulation.context
@@ -1776,7 +1800,7 @@ class StandardGCMCSystemSampler(GCMCSystemSampler):
             self.Ns.append(self.N)
         if report:
             self.report(simulation, state)
-        return None
+        return state
 
     def insertionMove(self):
         """
@@ -1956,6 +1980,14 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
             Number of moves to execute
         report : If true, call the report function after the move - this parameter was added by Cresset as an
             optimisation to ensure that a move followed by a report does not have to get the state twice.
+
+        Returns
+        -------
+        state : openmm.State
+            State object from OpenMM for the current simulation - this return type was added by Cresset as an
+            optimisation so that dcd reporting external to grand can use the state without another expensive
+            call to getState. The dcd reporting from grand's report function uses mdtraj, which does not allow
+            other processes to read the file while it's open for writing on Windows.
         """
         # Read in positions
         self.context = simulation.context
@@ -1982,7 +2014,7 @@ class NonequilibriumGCMCSystemSampler(GCMCSystemSampler):
         self.compound_integrator.setCurrentIntegrator(0)
         if report:
             self.report(simulation, state)
-        return None
+        return state
 
     def insertionMove(self):
         """
